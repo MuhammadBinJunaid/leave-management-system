@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LeaveFlow — Leave Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222536;
+    --border: #2e3148;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e8eaf6;
+    --muted: #8b8fa8;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; overflow-x:hidden; }
+
+  /* ── AUTH ── */
+  #auth-screen {
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(ellipse at 20% 50%, #1a1560 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #1f0a2e 0%, transparent 60%),
+                var(--bg);
+  }
+  .auth-box {
+    width:420px; background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:40px; box-shadow:0 40px 80px rgba(0,0,0,.5);
+    animation: fadeUp .5s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .auth-logo { font-size:28px; font-weight:700; color:var(--accent); margin-bottom:8px; letter-spacing:-1px; }
+  .auth-logo span { color:var(--accent2); }
+  .auth-sub { color:var(--muted); font-size:14px; margin-bottom:32px; }
+  .tab-row { display:flex; gap:8px; margin-bottom:28px; }
+  .tab-btn {
+    flex:1; padding:10px; border:1px solid var(--border); background:transparent;
+    color:var(--muted); border-radius:10px; cursor:pointer; font-family:var(--font);
+    font-size:14px; font-weight:500; transition:.2s;
+  }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .form-group { margin-bottom:18px; }
+  .form-group label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:500; }
+  .form-group input, .form-group select {
+    width:100%; padding:12px 16px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; color:var(--text); font-family:var(--font); font-size:14px; outline:none;
+    transition:.2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color:var(--accent); }
+  .form-group select option { background:var(--surface2); }
+  .btn-primary {
+    width:100%; padding:13px; background:var(--accent); color:#fff; border:none;
+    border-radius:10px; font-family:var(--font); font-size:15px; font-weight:600;
+    cursor:pointer; transition:.2s; margin-top:8px;
+  }
+  .btn-primary:hover { background:#5a52e0; transform:translateY(-1px); }
+  .demo-hint { margin-top:16px; padding:12px; background:rgba(108,99,255,.1); border:1px solid rgba(108,99,255,.2); border-radius:10px; font-size:12px; color:var(--muted); line-height:1.6; }
+  .demo-hint strong { color:var(--accent); }
+
+  /* ── APP SHELL ── */
+  #app { display:none; min-height:100vh; }
+  .layout { display:flex; min-height:100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:240px; background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:24px 0; position:fixed; height:100vh; z-index:10;
+  }
+  .sidebar-logo { padding:0 24px 24px; font-size:20px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; border-bottom:1px solid var(--border); }
+  .sidebar-logo span { color:var(--accent2); }
+  .nav-section { padding:16px 12px 0; flex:1; }
+  .nav-label { font-size:11px; color:var(--muted); font-weight:600; letter-spacing:1px; padding:0 12px; margin-bottom:8px; }
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:10px;
+    cursor:pointer; color:var(--muted); font-size:14px; font-weight:500; transition:.15s; margin-bottom:2px;
+  }
+  .nav-item:hover { background:var(--surface2); color:var(--text); }
+  .nav-item.active { background:rgba(108,99,255,.15); color:var(--accent); }
+  .nav-item .icon { font-size:18px; width:20px; text-align:center; }
+  .sidebar-user { padding:16px 24px; border-top:1px solid var(--border); }
+  .user-info { display:flex; align-items:center; gap:10px; }
+  .user-avatar { width:36px; height:36px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+  .user-name { font-size:13px; font-weight:600; }
+  .user-role { font-size:11px; color:var(--muted); }
+  .logout-btn { margin-top:12px; width:100%; padding:8px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:8px; cursor:pointer; font-family:var(--font); font-size:13px; transition:.2s; }
+  .logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+  /* ── MAIN ── */
+  .main { margin-left:240px; flex:1; padding:32px; }
+  .page { display:none; animation:fadeUp .3s ease; }
+  .page.active { display:block; }
+  .page-header { margin-bottom:28px; }
+  .page-title { font-size:26px; font-weight:700; letter-spacing:-0.5px; }
+  .page-sub { color:var(--muted); font-size:14px; margin-top:4px; }
+
+  /* ── CARDS ── */
+  .cards-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:28px; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px;
+    position:relative; overflow:hidden; transition:.2s;
+  }
+  .stat-card:hover { transform:translateY(-2px); border-color:var(--accent); }
+  .stat-card .card-label { font-size:12px; color:var(--muted); font-weight:500; margin-bottom:8px; }
+  .stat-card .card-value { font-size:32px; font-weight:700; letter-spacing:-1px; }
+  .stat-card .card-icon { position:absolute; right:16px; top:16px; font-size:28px; opacity:.3; }
+  .stat-card .card-change { font-size:12px; color:var(--green); margin-top:6px; }
+
+  /* ── TABLE ── */
+  .table-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+  .table-header { padding:20px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+  .table-title { font-size:16px; font-weight:600; }
+  table { width:100%; border-collapse:collapse; }
+  th { padding:12px 24px; text-align:left; font-size:12px; color:var(--muted); font-weight:600; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+  td { padding:14px 24px; font-size:14px; border-bottom:1px solid rgba(46,49,72,.5); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,.02); }
+
+  /* ── BADGES ── */
+  .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+  .badge-pending { background:rgba(245,158,11,.15); color:var(--yellow); }
+  .badge-approved { background:rgba(34,197,94,.15); color:var(--green); }
+  .badge-rejected { background:rgba(239,68,68,.15); color:var(--red); }
+
+  /* ── FORM CARD ── */
+  .form-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; max-width:600px; }
+  .form-card h3 { font-size:18px; font-weight:600; margin-bottom:20px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .btn-submit { padding:12px 28px; background:var(--accent); color:#fff; border:none; border-radius:10px; font-family:var(--font); font-size:14px; font-weight:600; cursor:pointer; transition:.2s; }
+  .btn-submit:hover { background:#5a52e0; }
+  .btn-danger { padding:6px 14px; background:rgba(239,68,68,.1); color:var(--red); border:1px solid rgba(239,68,68,.3); border-radius:8px; font-family:var(--font); font-size:12px; font-weight:600; cursor:pointer; transition:.2s; margin-left:6px; }
+  .btn-success { padding:6px 14px; background:rgba(34,197,94,.1); color:var(--green); border:1px solid rgba(34,197,94,.3); border-radius:8px; font-family:var(--font); font-size:12px; font-weight:600; cursor:pointer; transition:.2s; }
+  .btn-success:hover { background:rgba(34,197,94,.2); }
+  .btn-danger:hover { background:rgba(239,68,68,.2); }
+
+  /* ── NOTIF ── */
+  .notif-list { display:flex; flex-direction:column; gap:12px; }
+  .notif-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; display:flex; align-items:flex-start; gap:14px; }
+  .notif-item.unread { border-left:3px solid var(--accent); }
+  .notif-dot { width:10px; height:10px; border-radius:50%; background:var(--accent); margin-top:4px; flex-shrink:0; }
+  .notif-dot.read { background:var(--muted); }
+  .notif-text { font-size:14px; line-height:1.5; }
+  .notif-time { font-size:12px; color:var(--muted); margin-top:4px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position:fixed; bottom:24px; right:24px; padding:14px 20px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+    font-size:14px; font-weight:500; z-index:999; transform:translateY(80px);
+    transition:.3s; box-shadow:0 8px 32px rgba(0,0,0,.4);
+  }
+  #toast.show { transform:translateY(0); }
+  #toast.success { border-color:var(--green); color:var(--green); }
+  #toast.error { border-color:var(--red); color:var(--red); }
+
+  .empty-state { text-align:center; padding:48px 24px; color:var(--muted); }
+  .empty-state .emoji { font-size:40px; margin-bottom:12px; }
+
+  /* PROFILE */
+  .profile-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px; max-width:500px; }
+  .profile-avatar-big { width:72px; height:72px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; margin-bottom:16px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Leave<span>Flow</span></div>
+    <div class="auth-sub">Cloud-Based Leave Management System</div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@company.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn-primary" onclick="handleLogin()">Login to Dashboard</button>
+      <div class="demo-hint">
+        <strong>Demo Admin:</strong> admin@leaveflow.com / admin123<br>
+        <strong>Demo Employee:</strong> employee@leaveflow.com / emp123
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="signup-form" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signup-name" placeholder="Muhammad Bin Junaid"/>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="signup-email" placeholder="you@company.com"/>
+      </div>
+      <div class="form-group">
+        <label>Department</label>
+        <select id="signup-dept">
+          <option>Engineering</option>
+          <option>Marketing</option>
+          <option>HR</option>
+          <option>Finance</option>
+          <option>Operations</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="••••••••"/>
+      </div>
+      <button class="btn-primary" onclick="handleSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-logo">Leave<span>Flow</span></div>
+      <div class="nav-section">
+        <div class="nav-label">MAIN</div>
+        <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> Dashboard</div>
+        <div class="nav-item" onclick="showPage('apply')"><span class="icon">✏️</span> Apply Leave</div>
+        <div class="nav-item" onclick="showPage('history')"><span class="icon">📋</span> My Leaves</div>
+        <div class="nav-item" onclick="showPage('notifications')"><span class="icon">🔔</span> Notifications <span id="notif-badge" style="margin-left:auto;background:var(--accent2);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;display:none"></span></div>
+        <div id="admin-nav" style="display:none">
+          <div class="nav-label" style="margin-top:16px">ADMIN</div>
+          <div class="nav-item" onclick="showPage('manage')"><span class="icon">⚙️</span> Manage Requests</div>
+          <div class="nav-item" onclick="showPage('employees')"><span class="icon">👥</span> All Employees</div>
+        </div>
+        <div class="nav-label" style="margin-top:16px">ACCOUNT</div>
+        <div class="nav-item" onclick="showPage('profile')"><span class="icon">👤</span> Profile</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">M</div>
+          <div>
+            <div class="user-name" id="sidebar-name">User</div>
+            <div class="user-role" id="sidebar-role">Employee</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()">← Logout</button>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-title">Dashboard 👋</div>
+          <div class="page-sub" id="dash-welcome">Welcome back!</div>
+        </div>
+        <div class="cards-grid" id="stats-grid"></div>
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title">Recent Leave Requests</div>
+          </div>
+          <table>
+            <thead><tr><th>TYPE</th><th>FROM</th><th>TO</th><th>DAYS</th><th>STATUS</th></tr></thead>
+            <tbody id="dash-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- APPLY -->
+      <div class="page" id="page-apply">
+        <div class="page-header">
+          <div class="page-title">Apply for Leave</div>
+          <div class="page-sub">Submit a new leave request</div>
+        </div>
+        <div class="form-card">
+          <h3>Leave Request Form</h3>
+          <div class="form-group">
+            <label>Leave Type</label>
+            <select id="leave-type">
+              <option>Annual Leave</option>
+              <option>Sick Leave</option>
+              <option>Emergency Leave</option>
+              <option>Casual Leave</option>
+              <option>Unpaid Leave</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" id="leave-start"/>
+            </div>
+            <div class="form-group">
+              <label>End Date</label>
+              <input type="date" id="leave-end"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <input type="text" id="leave-reason" placeholder="Brief reason for leave..."/>
+          </div>
+          <div class="form-group">
+            <label>Additional Notes (Optional)</label>
+            <input type="text" id="leave-notes" placeholder="Any additional information..."/>
+          </div>
+          <button class="btn-submit" onclick="submitLeave()">Submit Request</button>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="page" id="page-history">
+        <div class="page-header">
+          <div class="page-title">My Leave History</div>
+          <div class="page-sub">Track all your leave requests</div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><div class="table-title">All Requests</div></div>
+          <table>
+            <thead><tr><th>TYPE</th><th>FROM</th><th>TO</th><th>DAYS</th><th>REASON</th><th>STATUS</th><th>ACTION</th></tr></thead>
+            <tbody id="history-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="page" id="page-notifications">
+        <div class="page-header">
+          <div class="page-title">Notifications 🔔</div>
+          <div class="page-sub">Stay updated on your requests</div>
+        </div>
+        <div class="notif-list" id="notif-list"></div>
+      </div>
+
+      <!-- MANAGE (ADMIN) -->
+      <div class="page" id="page-manage">
+        <div class="page-header">
+          <div class="page-title">Manage Requests ⚙️</div>
+          <div class="page-sub">Approve or reject employee leave requests</div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><div class="table-title">Pending Requests</div></div>
+          <table>
+            <thead><tr><th>EMPLOYEE</th><th>TYPE</th><th>FROM</th><th>TO</th><th>DAYS</th><th>REASON</th><th>ACTION</th></tr></thead>
+            <tbody id="manage-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- EMPLOYEES (ADMIN) -->
+      <div class="page" id="page-employees">
+        <div class="page-header">
+          <div class="page-title">All Employees 👥</div>
+          <div class="page-sub">View all registered employees</div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><div class="table-title">Employee Directory</div></div>
+          <table>
+            <thead><tr><th>NAME</th><th>EMAIL</th><th>DEPARTMENT</th><th>ROLE</th><th>TOTAL LEAVES</th></tr></thead>
+            <tbody id="employees-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <div class="page-title">My Profile</div>
+          <div class="page-sub">Your account information</div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-avatar-big" id="profile-avatar">M</div>
+          <div id="profile-info"></div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── DATA STORE (simulates Firebase) ──
+let DB = {
+  users: [
+    { id:'u1', name:'Admin User', email:'admin@leaveflow.com', password:'admin123', role:'admin', dept:'HR', leaves:[] },
+    { id:'u2', name:'Ali Hassan', email:'employee@leaveflow.com', password:'emp123', role:'employee', dept:'Engineering', leaves:[] },
+    { id:'u3', name:'Sara Khan', email:'sara@leaveflow.com', password:'sara123', role:'employee', dept:'Marketing', leaves:[] },
+  ],
+  leaves: [
+    { id:'l1', userId:'u2', userName:'Ali Hassan', type:'Annual Leave', start:'2026-04-10', end:'2026-04-12', days:3, reason:'Family vacation', status:'approved', appliedOn:'2026-04-05' },
+    { id:'l2', userId:'u2', userName:'Ali Hassan', type:'Sick Leave', start:'2026-03-15', end:'2026-03-16', days:2, reason:'Fever and rest', status:'rejected', appliedOn:'2026-03-14' },
+    { id:'l3', userId:'u3', userName:'Sara Khan', type:'Casual Leave', start:'2026-05-20', end:'2026-05-20', days:1, reason:'Personal work', status:'pending', appliedOn:'2026-05-10' },
+  ],
+  notifications: {}
+};
+
+let currentUser = null;
+
+// Save/load from localStorage
+function saveDB() { try { localStorage.setItem('leaveflow_db', JSON.stringify(DB)); } catch(e){} }
+function loadDB() { try { const d = localStorage.getItem('leaveflow_db'); if(d) DB = JSON.parse(d); } catch(e){} }
+loadDB();
+
+// ── AUTH ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='signup'&&i===1)));
+  document.getElementById('login-form').style.display = tab==='login'?'block':'none';
+  document.getElementById('signup-form').style.display = tab==='signup'?'block':'none';
+}
+
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const user = DB.users.find(u => u.email===email && u.password===pass);
+  if (!user) { showToast('Invalid email or password', 'error'); return; }
+  currentUser = user;
+  initApp();
+}
+
+function handleSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const dept = document.getElementById('signup-dept').value;
+  const pass = document.getElementById('signup-password').value;
+  if (!name||!email||!pass) { showToast('Please fill all fields', 'error'); return; }
+  if (DB.users.find(u=>u.email===email)) { showToast('Email already registered', 'error'); return; }
+  const newUser = { id:'u'+Date.now(), name, email, password:pass, role:'employee', dept, leaves:[] };
+  DB.users.push(newUser);
+  saveDB();
+  currentUser = newUser;
+  initApp();
+  showToast('Account created successfully!', 'success');
+}
+
+function handleLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  showToast('Logged out successfully');
+}
+
+function initApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('sidebar-name').textContent = currentUser.name;
+  document.getElementById('sidebar-role').textContent = currentUser.role==='admin'?'Administrator':'Employee';
+  document.getElementById('sidebar-avatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('admin-nav').style.display = currentUser.role==='admin'?'block':'none';
+  showPage('dashboard');
+  updateNotifBadge();
+}
+
+// ── NAVIGATION ──
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if(n.textContent.toLowerCase().includes(page.replace('-',' '))) n.classList.add('active'); });
+  if(page==='dashboard') renderDashboard();
+  if(page==='history') renderHistory();
+  if(page==='notifications') renderNotifications();
+  if(page==='manage') renderManage();
+  if(page==='employees') renderEmployees();
+  if(page==='profile') renderProfile();
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  document.getElementById('dash-welcome').textContent = `Welcome back, ${currentUser.name}! 👋`;
+  const myLeaves = DB.leaves.filter(l => currentUser.role==='admin' || l.userId===currentUser.id);
+  const pending = myLeaves.filter(l=>l.status==='pending').length;
+  const approved = myLeaves.filter(l=>l.status==='approved').length;
+  const rejected = myLeaves.filter(l=>l.status==='rejected').length;
+  const total = myLeaves.length;
+
+  const statsData = currentUser.role==='admin'
+    ? [
+        { label:'Total Requests', value: DB.leaves.length, icon:'📋', color:'var(--accent)' },
+        { label:'Pending', value: DB.leaves.filter(l=>l.status==='pending').length, icon:'⏳', color:'var(--yellow)' },
+        { label:'Approved', value: DB.leaves.filter(l=>l.status==='approved').length, icon:'✅', color:'var(--green)' },
+        { label:'Employees', value: DB.users.filter(u=>u.role==='employee').length, icon:'👥', color:'var(--accent2)' },
+      ]
+    : [
+        { label:'Total Requests', value: total, icon:'📋', color:'var(--accent)' },
+        { label:'Pending', value: pending, icon:'⏳', color:'var(--yellow)' },
+        { label:'Approved', value: approved, icon:'✅', color:'var(--green)' },
+        { label:'Rejected', value: rejected, icon:'❌', color:'var(--red)' },
+      ];
+
+  document.getElementById('stats-grid').innerHTML = statsData.map(s=>`
+    <div class="stat-card">
+      <div class="card-label">${s.label}</div>
+      <div class="card-value" style="color:${s.color}">${s.value}</div>
+      <div class="card-icon">${s.icon}</div>
+    </div>`).join('');
+
+  const recent = myLeaves.slice(-5).reverse();
+  document.getElementById('dash-table').innerHTML = recent.length ? recent.map(l=>`
+    <tr>
+      <td>${l.type}</td>
+      <td>${l.start}</td>
+      <td>${l.end}</td>
+      <td>${l.days}</td>
+      <td><span class="badge badge-${l.status}">${l.status.toUpperCase()}</span></td>
+    </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="emoji">📭</div>No leave requests yet</div></td></tr>`;
+}
+
+// ── APPLY LEAVE ──
+function submitLeave() {
+  const type = document.getElementById('leave-type').value;
+  const start = document.getElementById('leave-start').value;
+  const end = document.getElementById('leave-end').value;
+  const reason = document.getElementById('leave-reason').value.trim();
+  if (!start||!end||!reason) { showToast('Please fill all required fields', 'error'); return; }
+  if (new Date(end)<new Date(start)) { showToast('End date cannot be before start date', 'error'); return; }
+  const days = Math.ceil((new Date(end)-new Date(start))/(1000*60*60*24))+1;
+  const leave = {
+    id: 'l'+Date.now(), userId: currentUser.id, userName: currentUser.name,
+    type, start, end, days, reason, status:'pending', appliedOn: new Date().toISOString().split('T')[0]
+  };
+  DB.leaves.push(leave);
+  // notify admin
+  const adminKey = 'admin_notifs';
+  if (!DB.notifications[adminKey]) DB.notifications[adminKey] = [];
+  DB.notifications[adminKey].unshift({ text:`${currentUser.name} applied for ${type} (${days} days)`, time: 'Just now', read:false });
+  saveDB();
+  showToast('Leave request submitted successfully!', 'success');
+  document.getElementById('leave-reason').value = '';
+  document.getElementById('leave-notes').value = '';
+  document.getElementById('leave-start').value = '';
+  document.getElementById('leave-end').value = '';
+  showPage('history');
+}
+
+// ── HISTORY ──
+function renderHistory() {
+  const myLeaves = DB.leaves.filter(l=>l.userId===currentUser.id).reverse();
+  document.getElementById('history-table').innerHTML = myLeaves.length ? myLeaves.map(l=>`
+    <tr>
+      <td>${l.type}</td><td>${l.start}</td><td>${l.end}</td><td>${l.days}</td>
+      <td>${l.reason}</td>
+      <td><span class="badge badge-${l.status}">${l.status.toUpperCase()}</span></td>
+      <td>${l.status==='pending'?`<button class="btn-danger" onclick="cancelLeave('${l.id}')">Cancel</button>`:'—'}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty-state"><div class="emoji">📭</div>No leave requests yet.<br>Apply for your first leave!</div></td></tr>`;
+}
+
+function cancelLeave(id) {
+  DB.leaves = DB.leaves.filter(l=>l.id!==id);
+  saveDB();
+  showToast('Leave request cancelled');
+  renderHistory();
+}
+
+// ── NOTIFICATIONS ──
+function updateNotifBadge() {
+  const key = currentUser.role==='admin'?'admin_notifs':`user_notifs_${currentUser.id}`;
+  const notifs = DB.notifications[key] || [];
+  const unread = notifs.filter(n=>!n.read).length;
+  const badge = document.getElementById('notif-badge');
+  if (unread>0) { badge.style.display='inline'; badge.textContent=unread; }
+  else { badge.style.display='none'; }
+}
+
+function renderNotifications() {
+  const key = currentUser.role==='admin'?'admin_notifs':`user_notifs_${currentUser.id}`;
+  if (!DB.notifications[key]) DB.notifications[key] = [];
+  // mark all read
+  DB.notifications[key].forEach(n=>n.read=true);
+  saveDB();
+  updateNotifBadge();
+  const notifs = DB.notifications[key];
+  document.getElementById('notif-list').innerHTML = notifs.length ? notifs.map(n=>`
+    <div class="notif-item">
+      <div class="notif-dot read"></div>
+      <div><div class="notif-text">${n.text}</div><div class="notif-time">${n.time}</div></div>
+    </div>`).join('')
+    : `<div class="empty-state"><div class="emoji">🔔</div>No notifications yet</div>`;
+}
+
+// ── MANAGE (ADMIN) ──
+function renderManage() {
+  const pending = DB.leaves.filter(l=>l.status==='pending');
+  document.getElementById('manage-table').innerHTML = pending.length ? pending.map(l=>`
+    <tr>
+      <td><strong>${l.userName}</strong></td>
+      <td>${l.type}</td><td>${l.start}</td><td>${l.end}</td><td>${l.days}</td><td>${l.reason}</td>
+      <td>
+        <button class="btn-success" onclick="updateLeave('${l.id}','approved')">✓ Approve</button>
+        <button class="btn-danger" onclick="updateLeave('${l.id}','rejected')">✗ Reject</button>
+      </td>
+    </tr>`).join('')
+    : `<tr><td colspan="7"><div class="empty-state"><div class="emoji">✅</div>No pending requests!</div></td></tr>`;
+}
+
+function updateLeave(id, status) {
+  const leave = DB.leaves.find(l=>l.id===id);
+  if (!leave) return;
+  leave.status = status;
+  // notify employee
+  const key = `user_notifs_${leave.userId}`;
+  if (!DB.notifications[key]) DB.notifications[key] = [];
+  DB.notifications[key].unshift({
+    text:`Your ${leave.type} request has been ${status}!`,
+    time: 'Just now', read:false
+  });
+  saveDB();
+  showToast(`Leave ${status} successfully!`, 'success');
+  renderManage();
+}
+
+// ── EMPLOYEES ──
+function renderEmployees() {
+  const employees = DB.users.filter(u=>u.role==='employee');
+  document.getElementById('employees-table').innerHTML = employees.map(u=>`
+    <tr>
+      <td><strong>${u.name}</strong></td>
+      <td>${u.email}</td>
+      <td>${u.dept}</td>
+      <td><span class="badge badge-approved">Employee</span></td>
+      <td>${DB.leaves.filter(l=>l.userId===u.id).length}</td>
+    </tr>`).join('');
+}
+
+// ── PROFILE ──
+function renderProfile() {
+  const myLeaves = DB.leaves.filter(l=>l.userId===currentUser.id);
+  document.getElementById('profile-avatar').textContent = currentUser.name[0].toUpperCase();
+  document.getElementById('profile-info').innerHTML = `
+    <h2 style="font-size:22px;font-weight:700;margin-bottom:4px">${currentUser.name}</h2>
+    <p style="color:var(--muted);margin-bottom:20px">${currentUser.role==='admin'?'Administrator':'Employee'} · ${currentUser.dept}</p>
+    <div style="display:grid;gap:12px">
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:14px">Email</span>
+        <span style="font-size:14px;font-weight:500">${currentUser.email}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:14px">Department</span>
+        <span style="font-size:14px;font-weight:500">${currentUser.dept}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:14px">Total Leaves Applied</span>
+        <span style="font-size:14px;font-weight:500">${myLeaves.length}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:12px 0">
+        <span style="color:var(--muted);font-size:14px">Approved Leaves</span>
+        <span style="font-size:14px;font-weight:500;color:var(--green)">${myLeaves.filter(l=>l.status==='approved').length}</span>
+      </div>
+    </div>`;
+}
+
+// ── TOAST ──
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  setTimeout(()=>t.className='', 3000);
+}
+</script>
+</body>
+</html>
